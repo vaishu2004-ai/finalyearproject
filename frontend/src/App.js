@@ -868,6 +868,11 @@ function App() {
   });
   const [sortBy, setSortBy] = useState("default");
   const [modal, setModal] = useState(null); // { type, variant, icon, title, message, confirmText, onConfirm }
+  const activeWallet = wallet?.toLowerCase() || "";
+  const activeSavedNFTs = savedNFTs.filter((nft) => {
+    if (!activeWallet) return true;
+    return (nft.owner || nft.seller || "").toLowerCase() === activeWallet;
+  });
   // ── Profile settings fields ──────────────────────────────
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
@@ -1406,14 +1411,14 @@ function App() {
               </Swiper>
             </div>
 
-            {authUser && savedNFTs.length > 0 && (
+            {authUser && activeSavedNFTs.length > 0 && (
               <div style={{ marginBottom:"40px" }}>
                 {/* YOUR NFTs HEADER + SORT BAR */}
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 20px 14px", flexWrap:"wrap", gap:"10px" }}>
                   <h2 style={{ color:"#00e5ff", margin:0, fontSize:"18px" }}>
                     🖼️ Your NFTs
                     <span style={{ marginLeft:"10px", fontSize:"13px", color:"#475569", fontWeight:"normal" }}>
-                      ({savedNFTs.filter(n => category==="All"||n.category===category).length})
+                      ({activeSavedNFTs.filter(n => category==="All"||n.category===category).length})
                     </span>
                   </h2>
                   <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
@@ -1432,7 +1437,7 @@ function App() {
                 <div style={{ height:"1px", background:"rgba(0,229,255,0.15)", margin:"0 20px 16px" }} />
                 <div className="grid">
                   {(() => {
-                    const filtered = savedNFTs
+                    const filtered = activeSavedNFTs
                       .filter(n => (category==="All"||n.category===category) && n.name.toLowerCase().includes(searchQuery))
                       .filter(n => sortBy==="liked" ? likes[String(n.tokenId)] : true)
                       .sort((a,b) => {
@@ -1598,9 +1603,9 @@ function App() {
                 <div className="token-grid">
                   {[
                     { label:"Wallet",     val:`${wallet.slice(0,6)}...${wallet.slice(-4)}`, color:"#00e5ff", mono:true },
-                    { label:"NFTs Owned", val:savedNFTs.length,                             color:"#8b5cf6" },
+                    { label:"NFTs Owned", val:activeSavedNFTs.length,                       color:"#8b5cf6" },
                     { label:"NFTs Listed",val:marketNFTs.filter(n=>n.seller?.toLowerCase()===wallet.toLowerCase()).length, color:"#f0b429" },
-                    { label:"Portfolio",  val:savedNFTs.reduce((s,n)=>s+parseFloat(n.price||0),0).toFixed(3)+" ETH", color:"#00c896" },
+                    { label:"Portfolio",  val:activeSavedNFTs.reduce((s,n)=>s+parseFloat(n.price||0),0).toFixed(3)+" ETH", color:"#00c896" },
                   ].map(({label,val,color,mono})=>(
                     <div key={label} className="token-card">
                       <h3>{label}</h3>
@@ -1611,11 +1616,11 @@ function App() {
                 <div className="staking-box" style={{ marginTop:"24px" }}>
                   <h3 style={{ marginBottom:"8px" }}>🔒 NFT Staking</h3>
                   <p style={{ color:"#8892a4", fontSize:"13.5px", marginBottom:"16px" }}>Select an NFT to stake and earn 10 $GAME per day.</p>
-                  {savedNFTs.length === 0 ? (
+                  {activeSavedNFTs.length === 0 ? (
                     <p style={{ color:"#4a5568", fontSize:"13px", marginBottom:"14px" }}>No NFTs to stake yet. Mint one first!</p>
                   ) : (
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:"10px", marginBottom:"16px" }}>
-                      {savedNFTs.slice(0,6).map((nft,i)=>(
+                      {activeSavedNFTs.slice(0,6).map((nft,i)=>(
                         <div key={i} onClick={()=>showAlert(`"${nft.name}" staking launches on Sepolia soon!`,"info","Stake NFT","🔒")}
                           style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"12px", padding:"10px", cursor:"pointer", transition:"all 0.2s", textAlign:"center" }}
                           onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(0,229,255,0.3)";e.currentTarget.style.transform="translateY(-2px)";}}
@@ -1906,9 +1911,9 @@ function App() {
                 {/* STATS ROW */}
                 <div style={{ display:"flex", gap:"12px", padding:"0 32px 24px", flexWrap:"wrap" }}>
                   {[
-                    ["NFTs Owned", savedNFTs.length, "#00f6ff"],
-                    ["Minted", savedNFTs.filter(n => n.seller?.toLowerCase() === wallet?.toLowerCase()).length, "#7B61FF"],
-                    ["Total Value", savedNFTs.reduce((s,n) => s + parseFloat(n.price||0), 0).toFixed(3) + " ETH", "#f59e0b"],
+                    ["NFTs Owned", activeSavedNFTs.length, "#00f6ff"],
+                    ["Minted", activeSavedNFTs.filter(n => n.seller?.toLowerCase() === wallet?.toLowerCase()).length, "#7B61FF"],
+                    ["Total Value", activeSavedNFTs.reduce((s,n) => s + parseFloat(n.price||0), 0).toFixed(3) + " ETH", "#f59e0b"],
                     ["Favorites", Object.values(likes).filter(Boolean).length, "#ef4444"],
                   ].map(([label, val, color]) => (
                     <div key={label} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"12px", padding:"14px 22px", flex:1, minWidth:"110px", textAlign:"center" }}>
@@ -1925,7 +1930,7 @@ function App() {
                     <p style={{ color:"#64748b", marginBottom:"14px" }}>Connect your wallet to see your on-chain NFTs.</p>
                     <button onClick={connectWallet} style={{ padding:"10px 24px", borderRadius:"10px", border:"none", background:"linear-gradient(135deg,#7B61FF,#00f6ff)", color:"#fff", fontWeight:"700", cursor:"pointer" }}>Connect Wallet</button>
                   </div>
-                ) : savedNFTs.length === 0 ? (
+                ) : activeSavedNFTs.length === 0 ? (
                   <div style={{ padding:"40px 32px", textAlign:"center", color:"#64748b" }}>
                     <p style={{ fontSize:"2.5rem" }}>🖼️</p>
                     <p style={{ marginTop:"12px" }}>No NFTs yet. Mint or buy some!</p>
@@ -1933,7 +1938,7 @@ function App() {
                   </div>
                 ) : (
                   <div className="grid" style={{ padding:"0 28px 40px" }}>
-                    {savedNFTs.map((nft,i) => (
+                    {activeSavedNFTs.map((nft,i) => (
                       <div key={i} className="nft-card">
                         <img src={nft.image} alt={nft.name} onClick={() => setSelectedCollection(nft)} style={{ cursor:"pointer" }} />
                         <h3>{nft.name}</h3>
