@@ -12,7 +12,7 @@ export default function Login({ setAuth }) {
       setAuth(res.data.user);
       window.location.href = "/";
     } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+      alert(err.response?.data?.error || err.response?.data?.message || err.message || "Login failed");
     }
   };
 

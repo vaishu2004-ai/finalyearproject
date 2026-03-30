@@ -11,7 +11,7 @@ export default function Register() {
       alert("Registered successfully. Please login.");
       window.location.href = "/login";
     } catch (err) {
-      alert(err.response?.data?.message || "Register failed");
+      alert(err.response?.data?.error || err.response?.data?.message || err.message || "Register failed");
     }
   };
 

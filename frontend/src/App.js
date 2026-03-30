@@ -914,6 +914,10 @@ function App() {
     setModal({ type:"confirm", variant, title, message, confirmText, onConfirm });
   }
 
+  function getAuthErrorMessage(err, fallback) {
+    return err?.response?.data?.error || err?.response?.data?.message || err?.message || fallback;
+  }
+
   async function fetchNotifications(email) {
     try { const res = await axios.get(`${API}/api/notifications/${email}`); setNotifications(res.data); setUnreadCount(res.data.filter(n => !n.read).length); } catch(e) {}
   }
@@ -1049,7 +1053,10 @@ function App() {
 
   async function login() {
     try {
-      const res = await axios.post(`${API}/api/auth/login`, { email, password });
+      const res = await axios.post(`${API}/api/auth/login`, {
+        email: email.trim().toLowerCase(),
+        password,
+      });
       const user = res.data.user;
       localStorage.setItem("user", JSON.stringify(user));
       setAuthUser(user);
@@ -1067,7 +1074,11 @@ function App() {
 
   async function register() {
     try {
-      await axios.post(`${API}/api/auth/register`, { name, email, password });
+      await axios.post(`${API}/api/auth/register`, {
+        username: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      });
       showAlert("Account created! You can now login with your credentials.", "success", "Registered!", "🎉");
       setView("login");
     } catch(err) { showAlert("Registration failed. Please try again.", "error", "Error"); }
