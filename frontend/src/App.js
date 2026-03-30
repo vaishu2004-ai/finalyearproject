@@ -1556,7 +1556,17 @@ function App() {
                         🔗 Connect Wallet
                       </button>
                     )}
-                    {nft.fromDB ? (
+                    {wallet && nft.fromDB && isOwner && (
+                      <button className="btn-danger" onClick={() => deleteNFT(nft.tokenId)}>
+                        Remove Listing
+                      </button>
+                    )}
+                    {wallet && nft.fromDB && !isOwner && (
+                      <button disabled style={{ opacity:0.55, cursor:"not-allowed", fontSize:"12px" }}>
+                        Live trading unavailable on this demo
+                      </button>
+                    )}
+                    {nft.fromDB && !wallet ? (
                       <button disabled style={{ opacity:0.4, cursor:"not-allowed", fontSize:"12px" }}>
                         🔌 Start Hardhat to Trade
                       </button>
