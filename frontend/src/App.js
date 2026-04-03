@@ -12,6 +12,9 @@ import Sidebar from "./components/Sidebar";
 
 // 1. Define your API at the very top (outside the component)
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const MARKETPLACE_ADDRESS = process.env.REACT_APP_MARKETPLACE_ADDRESS || marketplace.address;
+const EXPECTED_CHAIN_ID = process.env.REACT_APP_CHAIN_ID || "";
+const isLocalMarketplaceAddress = /^0x(5fbdb2315678afecb367f032d93f642f64180aa3|e7f1725e7734ce288f8367e1bb143e90bb3f0512)$/i.test(MARKETPLACE_ADDRESS);
 
 // 2. Inside your App component, update your connection logic:
 const loadBlockchainData = async () => {
@@ -1027,7 +1030,7 @@ function App() {
               try {
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
-                const mc = new ethers.Contract(marketplace.address, marketplace.abi, signer);
+                const mc = new ethers.Contract(MARKETPLACE_ADDRESS, marketplace.abi, signer);
                 setContract(mc);
               } catch(e) {}
             })();
@@ -1044,7 +1047,7 @@ function App() {
         setWallet(newWallet);
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
-        const mc = new ethers.Contract(marketplace.address, marketplace.abi, signer);
+        const mc = new ethers.Contract(MARKETPLACE_ADDRESS, marketplace.abi, signer);
         setContract(mc);
         if (authUser) { try { await axios.post(`${API}/api/profile/save`, { email: authUser.email, wallet: newWallet }); } catch(e) {} }
       }
@@ -1107,7 +1110,7 @@ function App() {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
-    const marketplaceContract = new ethers.Contract(marketplace.address, marketplace.abi, signer);
+    const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, marketplace.abi, signer);
     setWallet(accounts[0]);
     setContract(marketplaceContract);
     if (authUser) { try { await axios.post(`${API}/api/profile/save`, { email: authUser.email, wallet: accounts[0] }); } catch(e) {} }
@@ -1128,7 +1131,7 @@ function App() {
       }
 
       if (readProvider) {
-        const readContract = new ethers.Contract(marketplace.address, marketplace.abi, readProvider);
+        const readContract = new ethers.Contract(MARKETPLACE_ADDRESS, marketplace.abi, readProvider);
         const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 3000));
         
         // Use getAllNFTs from the contract
@@ -1205,6 +1208,18 @@ function App() {
     if (!file) return showAlert("Please select an image file for your NFT.", "warning", "Missing Image", "🖼️");
     if (!nftName.trim()) return showAlert("Please enter a name for your NFT.", "warning", "Missing Name", "✏️");
     if (!price || isNaN(price) || Number(price) <= 0) return showAlert("Please enter a valid price in ETH (e.g. 0.01).", "warning", "Invalid Price", "💰");
+    if (window.location.hostname !== "localhost" && isLocalMarketplaceAddress) {
+      return showAlert("This live site is still using a local Hardhat contract address. Deploy your contract to Sepolia and set REACT_APP_MARKETPLACE_ADDRESS before minting.", "error", "Contract Not Deployed", "⚡");
+    }
+    if (EXPECTED_CHAIN_ID && window.ethereum) {
+      try {
+        const chainIdHex = await window.ethereum.request({ method: "eth_chainId" });
+        const currentChainId = parseInt(chainIdHex, 16).toString();
+        if (currentChainId !== EXPECTED_CHAIN_ID) {
+          return showAlert(`Wrong MetaMask network selected. Switch to chain ID ${EXPECTED_CHAIN_ID} and try again.`, "warning", "Wrong Network", "🌐");
+        }
+      } catch (e) {}
+    }
     setLoading(true);
     try {
       let imageURL;
